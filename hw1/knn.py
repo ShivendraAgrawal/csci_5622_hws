@@ -62,7 +62,29 @@ class Knearest:
         #
         # http://docs.scipy.org/doc/numpy/reference/generated/numpy.median.html
 
-        return self._y[item_indices[0]]
+        # Finding k nearest labels from k nearest indices
+        k_nearest_labels = []
+        for index in item_indices:
+            k_nearest_labels.append(self._y[index])
+
+        # Finding frequencies for k nearest labels
+        label_frequency_dict = Counter(k_nearest_labels)
+        frequency_labels_dict = defaultdict(list)
+        for label in label_frequency_dict:
+            frequency_labels_dict[label_frequency_dict[label]].append(label)
+
+        # Finding maximum frequency label/labels
+        max_frequency = max(frequency_labels_dict, key = int)
+        max_frequency_labels = frequency_labels_dict[max_frequency]
+
+        # Finding the median label from the labels with tied frequencies
+        median_label = int(round(median(max_frequency_labels)))
+
+        # Below commented code selects the first from all tied labels
+        # For this test set this method had slightly better performance than median
+        # selected_label = Counter(k_nearest_labels).most_common()[0][0]
+
+        return median_label
 
     def classify(self, example):
         """
@@ -74,14 +96,14 @@ class Knearest:
 
         # Finish this function to find the k closest points, query the
         # majority function, and return the value.
+        dist, ind = self._kdtree.query([example], k=self._k)
 
-        return self.majority(list(random.randrange(len(self._y)) \
-                                  for x in range(self._k)))
+        return self.majority(ind[0])
 
     def confusion_matrix(self, test_x, test_y, debug=False):
         """
         Given a matrix of test examples and labels, compute the confusion
-        matrixfor the current classifier.  Should return a dictionary of
+        matrix for the current classifier.  Should return a dictionary of
         dictionaries where d[ii][jj] is the number of times an example
         with true label ii was labeled as jj.
 
@@ -96,6 +118,15 @@ class Knearest:
         d = defaultdict(dict)
         data_index = 0
         for xx, yy in zip(test_x, test_y):
+
+            # classifying each test example and adding the result to d
+            classified_label = self.classify(xx)
+
+            if classified_label not in d[yy]:
+                d[yy][classified_label] = 1
+            else:
+                d[yy][classified_label] += 1
+
             data_index += 1
             if debug and data_index % 100 == 0:
                 print("%i/%i for confusion matrix" % (data_index, len(test_x)))
@@ -128,6 +159,7 @@ if __name__ == "__main__":
     parser.add_argument('--limit', type=int, default=-1,
                         help="Restrict training to this many examples")
     args = parser.parse_args()
+    print(args)
 
     data = Numbers("../data/mnist.pkl.gz")
 
@@ -148,4 +180,6 @@ if __name__ == "__main__":
         print("%i:\t" % ii + "\t".join(str(confusion[ii].get(x, 0))
                                        for x in range(10)))
     print("Accuracy: %f" % knn.accuracy(confusion))
+
+
 

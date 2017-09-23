@@ -34,6 +34,28 @@ def split_cv(length, num_folds):
     # Each fold is the testing set in a split, and the remaining indices
     # are added to the corresponding training set.
 
+    # Splitting indices into num_folds folds
+    if length % num_folds == 0:
+        size_each_fold = int(length/num_folds)
+    else:
+        size_each_fold = int(length/num_folds) + 1
+
+    split_indices = []
+    for i in range(num_folds):
+        try:
+            split_indices.append(indices[i*size_each_fold : i*size_each_fold + size_each_fold])
+        except:
+            split_indices.append(indices[i*size_each_fold : ])
+
+    # Adding all splits to 'splits' list
+    set_num_folds = set(range(num_folds))
+    for i in set_num_folds:
+        splits[i].test.extend(split_indices[i])
+
+        set_train_folds = set_num_folds - {i}
+        for j in set_train_folds:
+            splits[i].train.extend(split_indices[j])
+
     return splits
 
 
@@ -48,7 +70,9 @@ def cv_performance(x, y, num_folds, k):
         # indexed by `split.train` to train the classifier,
         # and then store the accuracy 
         # on the testing instances indexed by `split.test`
-        
+        knn = Knearest(x[split.train], y[split.train], k)
+        confusion = knn.confusion_matrix(x[split.test], y[split.test])
+        accuracy = knn.accuracy(confusion)
         accuracy_array.append(accuracy)
 
     return np.mean(accuracy_array)
@@ -67,7 +91,7 @@ if __name__ == "__main__":
     best_k, best_accuracy = -1, 0
     for k in [1, 3, 5, 7, 9]:
         accuracy = cv_performance(x, y, 5, k)
-        print("%d-nearest neighber accuracy: %f" % (k, accuracy))
+        print("%d-nearest neighbor accuracy: %f" % (k, accuracy))
         if accuracy > best_accuracy:
             best_accuracy, best_k = accuracy, k
     knn = Knearest(x, y, best_k)
