@@ -2,6 +2,7 @@ import random
 import argparse
 import gzip
 import pickle
+from pprint import pprint
 
 import numpy as np
 from math import exp, log
@@ -91,6 +92,9 @@ class LogReg:
 
         # TODO: Finish this function to do a single stochastic gradient descent update
         # and return the updated weight vector
+        score = self.w.dot(x_i)
+        sigmoid_i = sigmoid(score)
+        self.w = self.w - self.eta * (sigmoid_i - y) * x_i
 
         return self.w
 
@@ -105,8 +109,8 @@ def sigmoid(score, threshold=20.0):
 
     # TODO: Finish this function to return the output of applying the sigmoid
     # function to the input score (Please do not use external libraries)
-
-    return 1.0
+    expo = exp(score)
+    return expo/(1+expo)
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
@@ -127,8 +131,14 @@ if __name__ == "__main__":
     for epoch in range(args.passes):
         data.train_x, data.train_y = Numbers.shuffle(data.train_x, data.train_y)
 
+
         # TODO: Finish the code to loop over the training data and perform a stochastic
         # gradient descent update on each training example.
+        for i in range(data.train_x.shape[0]):
+            lr.sgd_update(data.train_x[i], data.train_y[i])
 
+        # Testing
+        print("\nTesting : Epoch = {}".format(epoch+1))
+        print(lr.progress(data.test_x, data.test_y))
         # NOTE: It may be helpful to call upon the 'progress' method in the LogReg
         # class to make sure the algorithm is truly learning properly on both training and test data
